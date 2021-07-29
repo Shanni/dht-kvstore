@@ -1,9 +1,7 @@
 # Miniproject - Key Value Store Server
 The following project implements a distributed key-value store server that can handle concurrent requests from clients while maintaining a memory usage of less than 128MB.
 
-## Contributors
-- Rebecca Meritz https://github.com/rmeritz
-- Maksim Borzenkov https://github.com/mborzenkov
+## Contributor
 - Shan Liu https://github.com/Shanni
 
 ## Building and Dependencies
