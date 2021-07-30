@@ -1,6 +1,10 @@
 package agamemnon
 
-import pb "agamemnon/pb/protobuf"
+import (
+	pb "agamemnon/pb/protobuf"
+	"fmt"
+	"time"
+)
 
 type DataStorage struct {
 	Replicas []KV
@@ -43,7 +47,7 @@ func (store DataStorage) decompressReplica (data []byte) []StoreVal {
 	1 - A
 	2 - B(+C)   A
 	~3- C       B        A~ -> failed
-  =>4 - D       C(+B)    B
+  =>4 - D       C(+B)    B->A
 	5   E       D        C(+B)
  */
 
@@ -65,9 +69,17 @@ func RecoverDataStorage() {
 
 	// 4. request from prev node replicaOne, replace replicaTwo
 	reqPay4 := pb.KVRequest{Command: SEND_REPLICA}
-	requestToReplicaNode(self.prevNode(), reqPay4, 1)
+	msgId := requestToReplicaNode(self.prevNode(), reqPay4, 1)
 
-	waitingForResonse()
+	dataStorage.Replicas[2].RemoveAll()
+
+	respValue := waitingForResponseData(msgId, 2 * time.Second)
+	if respValue != nil {
+		storageValue := dataStorage.decompressReplica(respValue)
+		dataStorage.addReplica(storageValue, 2)
+	} else {
+		fmt.Println("👩‍🎤👩‍🎤👩‍🎤👩‍🎤👩‍🎤👩‍🎤👩‍🎤👩‍🎤 failed to add A")
+	}
 }
 
 func printReplicas(msg string)  {

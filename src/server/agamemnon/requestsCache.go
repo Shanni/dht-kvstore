@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// store 1) incoming message and
+//		2) message forwarding
+
 // clientAddr: request source
 // ACK: store request "ack", if the request is forwarded to
 // 		other node, e.g. PUT sending replicas
@@ -21,8 +24,6 @@ type RequestCacheVal struct {
 
 	ttl        int8
 }
-
-//var RequestCache = map[string]*RequestCacheVal{}
 
 type RequestCache struct {
 	sync.RWMutex

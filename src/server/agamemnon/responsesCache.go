@@ -8,6 +8,9 @@ import (
 	"time"
 )
 
+// store 1) outgoing message before sending out and
+// 		2) message and data response
+
 type CacheVal struct {
 	response []byte
 	ttl      int8
@@ -19,7 +22,6 @@ type ResponseCache struct {
 }
 
 var responseCache ResponseCache
-
 
 func (r *ResponseCache) Init() {
 	r.cache = map[string]*CacheVal{}

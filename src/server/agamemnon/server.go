@@ -147,7 +147,7 @@ func sendResponse(clientAddr *net.UDPAddr, msgID []byte, respPay pb.KVResponse) 
 		fmt.Println("sendResponse WriteToUDP", err)
 	}
 
-	if _, ok := requestCache.Delete(msgID); !ok {
+	if _, ok := incomingCache.Delete(msgID); !ok {
 		fmt.Println("Error: No Request Found in RequestsCache.", hex.EncodeToString(msgID))
 	}
 }
@@ -167,13 +167,6 @@ func forwardRequest(originatorAddr *net.UDPAddr, msgID []byte, reqPay pb.KVReque
 	sendRequestMsgWithId(msgID, reqPay, toNode.Addr)
 	//sendResponse(originatorAddr, msgID, resPay)
 }
-
-// sendRequestMsg sends a message with uuid as msg id
-func sendRequestMsg(reqPay pb.KVRequest, clientAddr *net.UDPAddr) {
-	msgId, _ := uuid.New().MarshalBinary()
-	sendRequestMsgWithId(msgId, reqPay, clientAddr)
-}
-
 func sendRequestToNodeUUID(reqPay pb.KVRequest, toNode *Node) []byte {
 	msgId, _ := uuid.New().MarshalBinary()
 	sendRequestToNode(msgId, reqPay, toNode)
@@ -204,32 +197,6 @@ func sendRequestMsgWithId(msgID []byte, reqPay pb.KVRequest, clientAddr *net.UDP
 	}
 }
 
-// Send the message to random other nodes from the cluster, excluding specified addresses
-//
-// Arguments:
-//		rawMsg: marshaled message
-//      exclAddr: addresses to be excluded from the pool (e.g. incoming when forwarding)
-//func gossipMessage(msgId []byte, rawMsg []byte, exclAddr ...*net.UDPAddr) {
-//	thisNode := Self()
-//	exclAddr = append(exclAddr, thisNode.Addr)
-//	nodes := RandomNodes(gossipCount)
-//	for _, node := range nodes {
-//		isExcluded := false
-//		for _, addr := range exclAddr {
-//			if addr == node.Addr {
-//				isExcluded = true
-//				break
-//			}
-//		}
-//		if !isExcluded {
-//			log.Debug(log.Build("GSP", msgId, ".", false, node.Port))
-//			_, err := conn.WriteToUDP(rawMsg, node.Addr)
-//			if err != nil {
-//				log.Debug(log.BuildErr("GSP", err))
-//			}
-//		}
-//	}
-//}
 
 // Given a response message from another server, parse the response,
 // perform the necessary action (e.g. pass it back to the originator)
@@ -239,15 +206,12 @@ func sendRequestMsgWithId(msgID []byte, reqPay pb.KVRequest, clientAddr *net.UDP
 //		resPay unmarshalled payload
 //		rawMsg: raw message with response
 func handleResponse(srcAddr *net.UDPAddr, msgId []byte, resPay *pb.KVResponse, rawMsg []byte) {
-	//udp.NotifyResponseReceived(msgId, resPay)
-
-	// check if it's the one off propergate request
+	// check if it's the one off propagate request
 	if clientAddr, ok := incomingCache.Delete(msgId); ok {
 		if clientAddr == self.Addr {
 			fmt.Println("Something is odd.")
 		}
 
-		// why????
 		responseCache.Add(msgId, rawMsg)
 		_, err := conn.WriteToUDP(rawMsg, clientAddr)
 
@@ -257,10 +221,12 @@ func handleResponse(srcAddr *net.UDPAddr, msgId []byte, resPay *pb.KVResponse, r
 			log.Println("handleResponse", err)
 		}
 
-	} else {
+	}else if resPay.ReceiveData {
+		responseCache.Add(msgId, resPay.Value)
+	}else {
 		// assume no memory restriction
 		fmt.Println("When receive random response...")
-		requestCache.Add(msgId, srcAddr)
+		incomingCache.Add(msgId, srcAddr)
 	}
 }
 
@@ -276,7 +242,7 @@ func requestToReplicaNode(toNode *Node, reqPay pb.KVRequest, memo int) []byte {
 func waitingForResonse(msgId []byte, duration time.Duration) bool {
 	now := time.Now()
 	for {
-		if val := requestCache.Get(msgId); val != nil {
+		if val := incomingCache.Get(msgId); val != nil {
 			fmt.Println("........got a response.............", hex.EncodeToString(msgId))
 			return true
 		}
@@ -286,6 +252,22 @@ func waitingForResonse(msgId []byte, duration time.Duration) bool {
 		time.Sleep(5 * time.Millisecond)
 	}
 	return false
+}
+
+// send request, and wait for the response to that request
+func waitingForResponseData(msgId []byte, duration time.Duration) []byte {
+	now := time.Now()
+	for {
+		if val := responseCache.Get(msgId); val != nil {
+			fmt.Println("REEEEEECEIVE DATA", hex.EncodeToString(msgId))
+			return val
+		}
+		if time.Now().After(now.Add(duration)) {
+			break
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	return nil
 }
 
 // Given a request message from a client, parse the request,
@@ -307,7 +289,7 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 			fmt.Println("handleRequest WriteToUDP", err)
 		}
 	} else {
-		requestCache.Add(msgID, clientAddr)
+		incomingCache.Add(msgID, clientAddr)
 
 		respPay := pb.KVResponse{}
 		switch reqPay.Command {
@@ -487,7 +469,7 @@ func StartServer(port int, cluster []*Node) {
 	InitCluster(cluster)
 
 	go responseCache.TTLManager()
-	go requestCache.TTLManager()
+	go incomingCache.TTLManager()
 	InitReplicas()
 
 	//log.InitLogs(fmt.Sprintf("%v", Self().Port))
