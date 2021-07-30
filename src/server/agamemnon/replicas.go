@@ -16,22 +16,17 @@ const replicaCopy = 2
 const replicaLogEnabled = true
 
 func InitReplicas() {
-	var replicas []KV
 	for i := 0; i <= replicaCopy; i++ {
 		copy := KV{}
 		copy.KVStore = []StoreVal{}
 
 		dataStorage.Replicas = append(dataStorage.Replicas, copy)
 	}
-
-	dataStorage = DataStorage{
-		Replicas: replicas,
-	}
 }
 
 func (store *DataStorage) addReplica(kv []StoreVal, repId int) {
-	for k, v := range kv {
-		store.Replicas[repId].KVStore[k] = v
+	for _, item := range kv {
+		store.Replicas[repId].Put(item.Key, item.Value, &item.Version)
 	}
 }
 
@@ -70,7 +65,7 @@ func RecoverDataStorage() {
 	// 4. request from prev node replicaOne, replace replicaTwo
 	reqPay4 := pb.KVRequest{Command: SEND_REPLICA}
 	msgId := requestToReplicaNode(self.prevNode(), reqPay4, 1)
-
+	fmt.Println("😰😰😰", self.prevNode().Port)
 	dataStorage.Replicas[2].RemoveAll()
 
 	respValue := waitingForResponseData(msgId, 2 * time.Second)
@@ -84,6 +79,7 @@ func RecoverDataStorage() {
 
 func printReplicas(msg string)  {
 	if replicaLogEnabled {
+		fmt.Println("\n\n\n\n\n start ")
 		for i, kv := range dataStorage.Replicas {
 			kv.printDataStoreMsg(msg + "- # " + string(i))
 		}

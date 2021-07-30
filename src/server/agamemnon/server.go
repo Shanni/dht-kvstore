@@ -41,9 +41,11 @@ const (
 
 	ADD_REPLICA        = 0x11   // current Node add replica
 	SEND_REPLICA       = 0x12	// current Node to send replica
+	RECOVER_PREV_NODE_KEYSPACE = 0x13
 	NOTIFY_FAUILURE    = 0x22
 
 	TEST_GOSSIP        = 0x40
+	TEST_RECOVER_REPLICA = 0x41
 	SIMULATE_FAILURE   = 0X20
 )
 
@@ -300,10 +302,10 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 				respPay.ErrCode = dataStorage.Replicas[0].Put(reqPay.Key, reqPay.Value, reqPay.Version)
 
 				msgId := requestToReplicaNode(self.nextNode(), reqPay, 1)
-				//msgId2 := requestToReplicaNode(self.nextNode().nextNode(), reqPay, 2)
+				msgId2 := requestToReplicaNode(self.nextNode().nextNode(), reqPay, 2)
 
 				fmt.Println("who's sending responsee 🤡 ", self.Port, " to ", clientAddr.Port)
-				if waitingForResonse(msgId, time.Second) {// && waitingForResonse(msgId) {
+				if waitingForResonse(msgId, time.Second) && waitingForResonse(msgId2, time.Second) {
 					sendResponse(clientAddr, msgID, respPay)
 				} else {
 					// TODO: revert primary, send error
@@ -400,16 +402,28 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 
 			respPay.ErrCode = NO_ERR
 			sendResponse(clientAddr, msgID, respPay)
+		case RECOVER_PREV_NODE_KEYSPACE:
+			// TODO: error handling on and internal failure
+			RecoverDataStorage()
+
+			respPay.ErrCode = NO_ERR
+			sendResponse(clientAddr, msgID, respPay)
 		case TEST_GOSSIP:
 			fmt.Println(self.Port, " TESTING GOSSIP 😡", *reqPay.NodeIpPort, "failed")
 			RemoveNode(GetNodeByIpPort("127.0.0.1:3331"))
 			startGossipFailure(GetNodeByIpPort("127.0.0.1:3331"))
+		case TEST_RECOVER_REPLICA:
+			reqPay := pb.KVRequest{Command: SHUTDOWN}
+			sendRequestToNodeUUID(reqPay, self.prevNode())
+			RemoveNode(self.prevNode())
+
+			RecoverDataStorage()
 		default:
 			//respPay.ErrCode = UNKNOWN_CMD_ERR
 			//sendResponse(clientAddr, msgID, respPay)
 		}
 	}
-	//printReplicas(self.ipPort())
+	printReplicas(self.ipPort())
 }
 
 // Unmarshals a request from a clients
@@ -489,9 +503,9 @@ func StartServer(port int, cluster []*Node) {
 	fmt.Println(self.Port, " has", len(cluster))
 	//HeartbeatManager()
     PrintCluster()
-	fmt.Println(indexOfHashCode(1))
-	fmt.Println(indexOfHashCode(961076386))
-	fmt.Println(indexOfHashCode(3611737487))
+	//fmt.Println(indexOfHashCode(1))
+	//fmt.Println(indexOfHashCode(961076386))
+	//fmt.Println(indexOfHashCode(3611737487))
 	rcvBuffer := make([]byte, bufferSizeBytes)
 	for {
 		select {

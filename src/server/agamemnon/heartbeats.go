@@ -72,7 +72,7 @@ func sendHeartbeats() {
 func handleHeartbeats(i int)  {
 	maxWaitingTime := 1500 * time.Millisecond
 
-	// failure count for each node, we allow up to 3 failures
+	// failure count for each node, we allow up to 3+ failures
 	failuresCount := 0
 	for {
 		for _, timestamp := range TimestampLogs[i] {
@@ -102,7 +102,12 @@ func handleHeartbeats(i int)  {
 				fmt.Println("No good 😅😅😅😅😅😅 ", sendToNodes[i].Port, "failed")
 				RemoveNode(sendToNodes[i])
 
-				RecoverDataStorage()
+				if i == 0 {
+					RecoverDataStorage()
+				} else {
+					reqPay := pb.KVRequest{Command: RECOVER_PREV_NODE_KEYSPACE}
+					sendRequestToNodeUUID(reqPay, self.prevNode())
+				}
 				startGossipFailure(sendToNodes[i])
 				time.Sleep(time.Second)
 				break
