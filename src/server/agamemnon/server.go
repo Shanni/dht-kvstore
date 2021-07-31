@@ -501,11 +501,8 @@ func StartServer(port int, cluster []*Node) {
 	fmt.Println("Server started UDP")
 
 	fmt.Println(self.Port, " has", len(cluster))
-	//HeartbeatManager()
-    PrintCluster()
-	//fmt.Println(indexOfHashCode(1))
-	//fmt.Println(indexOfHashCode(961076386))
-	//fmt.Println(indexOfHashCode(3611737487))
+	HeartbeatManager()
+
 	rcvBuffer := make([]byte, bufferSizeBytes)
 	for {
 		select {
@@ -525,8 +522,8 @@ func StartServer(port int, cluster []*Node) {
 				fmt.Println("BIG NEWS!", self.Port, " recieved ", msg.MessageID, numBytes, " from ", clientAddr.Port)
 				if err == nil && msg.Type == 1 {
 					//Hangle response
-					fmt.Println("Ever handle response?", clientAddr.Port, clientAddr.IP)
-					fmt.Println(resp)
+					//fmt.Println("Ever handle response?", clientAddr.Port, clientAddr.IP)
+					//fmt.Println(resp)
 					go handleResponse(clientAddr, msg.MessageID, resp, rawMsg)
 				} else if err == nil && msg.Type == 2 {
 					fmt.Println("It's an ACK ~")

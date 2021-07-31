@@ -22,6 +22,35 @@ $docker run dht ./dht-server 3331 servers.txt
 The hashcode is a integer in 0.255 that represents the keyspace that that server
 is in charge of.
 
+## Deploying to GCP
+
+Install [`gcloud`](https://cloud.google.com/sdk/docs/install#deb).
+
+Create a project with `gcloud project create <PROJECT_NAME>`.
+
+Use `./bin/gcp-cluster-prepare.sh NODE_COUNT PROJECT_NAME` to spin up nodes in the cluster for the first
+time. You may need to manually configure billing for the project as well as
+confirm `y` to running some services on your project and running the script
+again.
+
+This script will also generate `gcp-server.external.txt`. Use this file when
+testing locally against the gcp cluster. `gcp-server.internal.txt` is also
+generated and can be if running tests from another gcp instance.
+
+To deploy the code checkout whatever code you want to deploy locally, then run
+`./bin/gcp-cluster-deploy.sh NODE_COUNT PROJECT_NAME`.
+
+Stdout is logged to a file called `node<number>.log` which is in the home
+of each server. You can find it if you ssh into the node with `gcloud compute
+ssh node<number>`. You can download all the logs to logs-gcp folder with a script
+`./bin/gcp-cluster-get-logs.sh NODE_COUNT PROJECT_NAME`
+
+Make sure to **stop the nodes** after testing to avoid racking up giant bills.
+You can do this with `./bin/gcp-cluster-stop.sh NODE_COUNT`.
+
+If the nodes need to be started again later you can do this with
+`./bin/gcp-cluster-start.sh`.
+
 ## Testing
 There exists a test client in the `test-client` folder that implements some additional tests on top of the provided test client from the instructor. The tests included in this client are:
 1. PUT commands that trigger the INVALID_KEY_ERR and INVALID_VAL_ERR errors.

@@ -64,28 +64,6 @@ func readNodeInfo(info string) (string, int, error) {
 	return addr[0], port, nil
 }
 
-//// ClusterManager creates new cluster (node group) from input
-//func ClusterManager(input []Node) {
-//	clusterMutex.Lock()
-//	defer clusterMutex.Unlock()
-//
-//
-//	newCluster := make([]*Node, len(input))
-//	for i, node := range input {
-//
-//
-//		newNode := Node{Ip: node.Ip, Port: node.Port, HashCode: node.HashCode, , IsSelf: node.IsSelf}
-//		newCluster[i] = &newNode
-//		if newNode.IsSelf {
-//			self = &newNode
-//		}
-//
-//	}
-//
-
-//	cluster = newCluster
-//}
-
 // $go run server.go PORT servers.txt
 func main() {
 	if len(os.Args) < 3 {
