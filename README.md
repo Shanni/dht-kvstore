@@ -1,3 +1,8 @@
+#Test Result 
+MP1: Verification Code: 6577B2C
+MP2: Verification Code: 30DDF92
+
+
 # Miniproject - Key Value Store Server
 The following project implements a distributed key-value store server that can handle concurrent requests from clients while maintaining a memory usage of less than 128MB.
 

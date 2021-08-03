@@ -89,6 +89,10 @@ func buildReqMsgWithMsgId(reqPay pb.KVRequest, msgId []byte) *pb.Msg {
 	}
 }
 
+func getNetAddress(addr *net.UDPAddr) string {
+	return addr.String()
+}
+
 // Create and send the response message to the client
 //
 // Arguments:
@@ -96,7 +100,7 @@ func buildReqMsgWithMsgId(reqPay pb.KVRequest, msgId []byte) *pb.Msg {
 //		msgID: ID of the request
 //		respPay: payload to return in the response
 func sendResponse(clientAddr *net.UDPAddr, msgID []byte, respPay pb.KVResponse) {
-	if self.Port == clientAddr.Port {
+	if self.Addr.String() == clientAddr.String() {
 		fmt.Println("Stop. No need to send response to self. ", clientAddr.Port)
 		fmt.Println(respPay)
 		return
@@ -123,12 +127,12 @@ func sendResponse(clientAddr *net.UDPAddr, msgID []byte, respPay pb.KVResponse) 
 		return
 	}
 
-	fmt.Println(self.ipPort(), "🤖ABOUT TO SENT", respMsgBytes, clientAddr.String())
+	fmt.Println(self.Addr.String(), "🤖ABOUT TO SENT", respMsgBytes, clientAddr.String())
 	//Cache the response if it's not a server overload
 	if respPay.ErrCode != SYS_OVERLOAD_ERR {
 		// If there is no space to add to the cache, send a server
 		// overload response instead
-		if !responseCache.Add(msgID, respMsgBytes) {
+		if !responseCache.Add(msgID, getNetAddress(clientAddr), respMsgBytes) {
 			respPay.ErrCode = SYS_OVERLOAD_ERR
 			respPay.OverloadWaitTime = &overloadWaitTimeMs
 			sendResponse(clientAddr, msgID, respPay)
@@ -154,8 +158,8 @@ func sendResponse(clientAddr *net.UDPAddr, msgID []byte, respPay pb.KVResponse) 
 //		rawMsg: marshaled message
 //		toAddr: UPD Addr of node to send it to
 func forwardRequest(originatorAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, rawMsg []byte, toNode Node) {
-	if self.Port == toNode.Port {
-		fmt.Println("Stop. Can't forward to self - ", toNode.Port)
+	if self.Addr.String() == toNode.Addr.String() {
+		fmt.Println("Stop. Can't forward to self - ", toNode.Addr.String())
 		return
 	}
 
@@ -170,7 +174,7 @@ func sendRequestToNodeUUID(reqPay pb.KVRequest, toNode *Node) []byte {
 
 func sendRequestToNode(msgID []byte, reqPay pb.KVRequest, toNode *Node) {
 	if toNode == self {
-		log.Println("sendRequestToNode Not sending message to self " + toNode.ipPort())
+		log.Println("sendRequestToNode Not sending message to self " + toNode.Addr.String())
 		return
 	}
 	msg := buildReqMsgWithMsgId(reqPay, msgID)
@@ -195,7 +199,7 @@ func handleResponse(srcAddr *net.UDPAddr, msgId []byte, resPay *pb.KVResponse, r
 			fmt.Println("Something is odd.")
 		}
 
-		responseCache.Add(msgId, rawMsg)
+		responseCache.Add(msgId, getNetAddress(srcAddr), rawMsg)
 		_, err := conn.WriteToUDP(rawMsg, clientAddr)
 
 		fmt.Println("💡💡💡 forwarding response to ", clientAddr.Port, resPay)
@@ -205,7 +209,7 @@ func handleResponse(srcAddr *net.UDPAddr, msgId []byte, resPay *pb.KVResponse, r
 		}
 
 	}else if resPay.ReceiveData {
-		responseCache.Add(msgId, resPay.Value)
+		responseCache.Add(msgId, getNetAddress(srcAddr), resPay.Value)
 	}else {
 		// assume no memory restriction
 		fmt.Println("When receive random response...")
@@ -238,10 +242,10 @@ func waitingForResonse(msgId []byte, duration time.Duration) bool {
 }
 
 // send request, and wait for the response to that request
-func waitingForResponseData(msgId []byte, duration time.Duration) []byte {
+func waitingForResponseData(msgId []byte, memo string, duration time.Duration) []byte {
 	now := time.Now()
 	for {
-		if val := responseCache.Get(msgId); val != nil {
+		if val := responseCache.Get(msgId, memo); val != nil {
 			fmt.Println("REEEEEECEIVE DATA", hex.EncodeToString(msgId))
 			return val
 		}
@@ -263,7 +267,7 @@ func waitingForResponseData(msgId []byte, duration time.Duration) []byte {
 //		reqPay unmarshalled payload
 //		rawMsg original message for further processing
 func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, rawMsg []byte) {
-	if respMsgBytes := responseCache.Get(msgID); respMsgBytes != nil {
+	if respMsgBytes := responseCache.Get(msgID, getNetAddress(clientAddr)); respMsgBytes != nil {
 		fmt.Println("Handle repeated request - 😡", respMsgBytes, "sending to ", clientAddr.Port)
 
 		_, err := conn.WriteToUDP(respMsgBytes, clientAddr)
@@ -284,7 +288,7 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 				msgId := requestToReplicaNode(self.nextNode(), reqPay, 1)
 				msgId2 := requestToReplicaNode(self.nextNode().nextNode(), reqPay, 2)
 
-				fmt.Println("who's sending responsee 🤡 ", self.Port, " to ", clientAddr.Port)
+				fmt.Println("who's sending responsee 🤡 ", self.Addr.String(), " to ", clientAddr.Port)
 				if waitingForResonse(msgId, time.Second) && waitingForResonse(msgId2, time.Second) {
 					sendResponse(clientAddr, msgID, respPay)
 				} else {
@@ -358,7 +362,7 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 		case NOTIFY_FAUILURE:
 			failedNode := GetNodeByIpPort(*reqPay.NodeIpPort)
 			if failedNode != nil {
-				fmt.Println(self.Port, " STARTT CONTIUE GOSSSSSSIP 👻💩💩💩💩💩🤢🤢🤢🤢", *reqPay.NodeIpPort, "failed")
+				fmt.Println(self.Addr.String(), " STARTT CONTIUE GOSSSSSSIP 👻💩💩💩💩💩🤢🤢🤢🤢", *reqPay.NodeIpPort, "failed")
 				RemoveNode(failedNode)
 				startGossipFailure(failedNode)
 			}
@@ -383,7 +387,7 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 			respPay.ErrCode = NO_ERR
 			sendResponse(clientAddr, msgID, respPay)
 		case TEST_GOSSIP:
-			fmt.Println(self.Port, " TESTING GOSSIP 😡", *reqPay.NodeIpPort, "failed")
+			fmt.Println(self.Addr.String(), " TESTING GOSSIP 😡", *reqPay.NodeIpPort, "failed")
 			RemoveNode(GetNodeByIpPort("127.0.0.1:3331"))
 			startGossipFailure(GetNodeByIpPort("127.0.0.1:3331"))
 		case TEST_RECOVER_REPLICA:
@@ -397,7 +401,7 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 			//sendResponse(clientAddr, msgID, respPay)
 		}
 	}
-	printReplicas(self.ipPort())
+	printReplicas(self.Addr.String())
 }
 
 // Unmarshals a request from a clients
@@ -416,7 +420,7 @@ func unmarshalMessage(buf []byte) (*pb.KVRequest, *pb.KVResponse, *pb.Msg, error
 
 	err := proto.Unmarshal(buf, &reqMsg)
 	if err != nil {
-		fmt.Println(self.Port, "unmarshalMessage Failed to unmarshal ", len(buf))
+		fmt.Println(self.Addr.String(), "unmarshalMessage Failed to unmarshal ", len(buf))
 		return nil, nil, nil, err
 	}
 
@@ -474,7 +478,7 @@ func StartServer(port int, cluster []*Node) {
 
 	fmt.Println("Server started UDP")
 
-	fmt.Println(self.Port, " has", len(cluster))
+	fmt.Println(self.Addr.String(), " has", len(cluster))
 	HeartbeatManager()
 
 	rcvBuffer := make([]byte, bufferSizeBytes)
@@ -493,7 +497,7 @@ func StartServer(port int, cluster []*Node) {
 			if err == nil {
 				rawMsg := rcvBuffer[:numBytes]
 				req, resp, msg, err := unmarshalMessage(rawMsg)
-				fmt.Println("BIG NEWS!", self.Port, " recieved ", msg.MessageID, numBytes, " from ", clientAddr.Port)
+				fmt.Println("BIG NEWS!", self.Addr.String(), " recieved ", msg.MessageID, numBytes, " from ", clientAddr.Port)
 				if err == nil && msg.Type == 1 {
 					//Hangle response
 					//fmt.Println("Ever handle response?", clientAddr.Port, clientAddr.IP)

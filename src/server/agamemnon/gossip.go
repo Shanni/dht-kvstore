@@ -18,8 +18,8 @@ func startGossipFailure(node *Node) {
 			continue
 		}
 
-		fmt.Println("👺👺", index, cluster[index].ipPort())
-		str := node.ipPort()
+		fmt.Println("👺👺", index, cluster[index].Addr.String())
+		str := node.Addr.String()
 		reqPay := pb.KVRequest{Command: NOTIFY_FAUILURE, NodeIpPort: &str}
 
 		// Goroutine, concurrent process might modify the cluster at the same time.

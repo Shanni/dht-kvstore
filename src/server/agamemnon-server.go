@@ -109,9 +109,7 @@ func main() {
 		}
 
 		newNode := lib.Node{
-			Ip:       nodeIp,
-			Port:     nodePort,
-			HashCode: lib.HashCodeForIpPort(fmt.Sprintf("%v:%v", nodeIp, nodePort)),
+			HashCode: lib.HashCodeForIpPort(addr.String()),
 			Addr:     addr,
 			IsSelf:   isSelf,
 		}

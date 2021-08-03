@@ -18,35 +18,36 @@ type CacheVal struct {
 
 type ResponseCache struct {
 	sync.RWMutex
-	cache map[string]*CacheVal
+	cache map[string]CacheVal
 }
 
 var responseCache ResponseCache
 
 func (r *ResponseCache) Init() {
-	r.cache = map[string]*CacheVal{}
+	r.cache = map[string]CacheVal{}
 }
 
-func (r *ResponseCache) Add(msgID []byte, respMsgBytes []byte) bool {
+func (r *ResponseCache) Add(msgID []byte, memo string, respMsgBytes []byte) bool {
 	if IsAllocatePossible(len(msgID) + len(respMsgBytes) + 1) {
 		r.Lock()
 		defer r.Unlock()
-		fmt.Println("Adding to ResponseCache after sending msg", self.Port, msgID, respMsgBytes)
-		key := hex.EncodeToString(msgID)
+		fmt.Println("Adding to ResponseCache after sending msg", self.Addr.String(), msgID, respMsgBytes)
+		key := hex.EncodeToString(msgID) + memo
 		cacheVal := CacheVal{response: respMsgBytes, ttl: 4}
-		r.cache[key] = &cacheVal
+		r.cache[key] = cacheVal
+		fmt.Println(r.cache[key].response, "issss response")
 		return true
 	}
 	return false
 }
 
-func (r ResponseCache) Get(msgID []byte) []byte {
-	r.RLock()
-	defer r.RUnlock()
+func (r ResponseCache) Get(msgID []byte, memo string) []byte {
+	key := hex.EncodeToString(msgID) + memo
 
-	key := hex.EncodeToString(msgID)
+	r.Lock()
+	defer r.Unlock()
 	if val, ok := r.cache[key]; ok {
-		fmt.Println("👽👽👽👽 GET ", self.Port, msgID, val.response)
+		fmt.Println("👽👽👽👽 GET ", self.Addr.String(), msgID, val.response)
 		return val.response
 	}
 	return nil
@@ -79,6 +80,7 @@ func (r *ResponseCache) TTLManager() {
 	r.Init()
 
 	for {
+		r.RLock()
 		for k, v := range r.cache {
 			if v.ttl > 0 {
 				v.ttl -= 1
@@ -88,6 +90,7 @@ func (r *ResponseCache) TTLManager() {
 				r.Unlock()
 			}
 		}
+		r.RUnlock()
 
 		// Run the GC explicitly since many items may have been removed
 		runtime.GC()
@@ -99,7 +102,7 @@ func (r *ResponseCache) TTLManager() {
 }
 
 func (r *ResponseCache) printData() {
-	fmt.Println("\n\n\n\n\n\n", self.Port)
+	fmt.Println("\n\n\n\n\n\n", self.Addr.String())
 	for k, v := range r.cache {
 		msg, _ := hex.DecodeString(k)
 		fmt.Println(msg, v)

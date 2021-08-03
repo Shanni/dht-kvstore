@@ -19,15 +19,6 @@ for i in `seq $NODE_COUNT`; do
 
   node_info=`get_node_info $i`
 
-#  source gcp/bin/gcp-set-zone.sh $i
-#  if [ -z "$node_info" ]; then
-#    gcloud compute instances create node$i \
-#          --zone=$ZONE \
-#          --machine-type="e2-micro" \
-##          --boot-disk-size=200MB
-#    node_info=`get_node_info $i`
-#  fi
-
   if [ $i -lt 10 ]; then
     i=0$i
   fi

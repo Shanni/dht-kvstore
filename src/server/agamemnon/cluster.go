@@ -98,7 +98,7 @@ func HashCodeForIpPort(ipPort string) uint32 {
 
 func GetNodeByIpPort(ipPort string) *Node {
 	for _, node := range cluster {
-		if node.ipPort() == ipPort {
+		if node.Addr.String() == ipPort {
 			return node
 		}
 	}
@@ -110,7 +110,7 @@ func RemoveNode(node *Node) {
 	defer clusterMutex.Unlock()
 
 	for i, n := range cluster {
-		if n.ipPort() == node.ipPort(){
+		if n.Addr.String() == node.Addr.String(){
 			cluster = append(cluster[:i], cluster[i+1:]...)
 			break
 		}
@@ -156,11 +156,11 @@ func GetMembershipCount() int32 {
 }
 
 func (n *Node) printNode() {
-	log.Println(self.ipPort(), " 🥶        ",len(cluster),"      Node ", n.ipPort(), n.Index, n.HashCode)
+	log.Println(self.Addr.String(), " 🥶        ",len(cluster),"      Node ", n.Addr.String(), n.Index, n.HashCode)
 }
 
 func PrintCluster()  {
-	log.Println(self.ipPort(), "MARK")
+	log.Println(self.Addr.String(), "MARK")
 	for _,n := range cluster {
 		n.printNode()
 	}

@@ -65,10 +65,10 @@ func RecoverDataStorage() {
 	// 4. request from prev node replicaOne, replace replicaTwo
 	reqPay4 := pb.KVRequest{Command: SEND_REPLICA}
 	msgId := requestToReplicaNode(self.prevNode(), reqPay4, 1)
-	fmt.Println("😰😰😰", self.prevNode().Port)
+	fmt.Println("😰😰😰", self.prevNode().Addr.String())
 	dataStorage.Replicas[2].RemoveAll()
 
-	respValue := waitingForResponseData(msgId, 2 * time.Second)
+	respValue := waitingForResponseData(msgId, getNetAddress(self.prevNode().Addr), 2 * time.Second)
 	if respValue != nil {
 		storageValue := dataStorage.decompressReplica(respValue)
 		dataStorage.addReplica(storageValue, 2)

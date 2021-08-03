@@ -18,7 +18,7 @@ import (
 type RequestCacheVal struct {
 	id         []byte
 	clientAddr *net.UDPAddr
-	ackedAddr  []*net.UDPAddr
+
 	requiredAck bool
 	timestamp  time.Time
 
@@ -64,7 +64,7 @@ func (r *RequestCache) Add(msgID []byte, clientAddr *net.UDPAddr) {
 
 	key := hex.EncodeToString(msgID)
 
-	cacheVal := RequestCacheVal{id: msgID, clientAddr: clientAddr, ackedAddr:  []*net.UDPAddr{}, ttl: 4}
+	cacheVal := RequestCacheVal{id: msgID, clientAddr: clientAddr, ttl: 4}
 	r.cache[key] = &cacheVal
 }
 

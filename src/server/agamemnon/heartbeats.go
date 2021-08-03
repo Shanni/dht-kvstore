@@ -20,13 +20,6 @@ type HeartbeatTimestamp struct {
 	time time.Time
 }
 
-//type Heartbeats struct {
-//	sync.Mutex
-//	sendToNode *Node
-//	timestampLogs []HeartbeatTimestamp
-//	failureCount int
-//}
-
 func InitHeartbeatsSendToNode(n int) {
 	lock.Lock()
 	defer lock.Unlock()
@@ -35,7 +28,7 @@ func InitHeartbeatsSendToNode(n int) {
 	TimestampLogs = [][]HeartbeatTimestamp{}
 
 	prev := self.prevNode()
-	fmt.Println("Node ", self.Port, " prev ", prev.Port, prev.prevNode().Port)
+	fmt.Println("Node ", self.Addr.String(), " prev ", prev.Addr.String(), prev.prevNode().Addr.String())
 
 	for i := 0; i < n; i++ {
 		if prev == self {
@@ -46,7 +39,6 @@ func InitHeartbeatsSendToNode(n int) {
 
 		TimestampLogs = append(TimestampLogs, []HeartbeatTimestamp{})
 	}
-
 }
 
 func sendHeartbeats() {
@@ -55,14 +47,14 @@ func sendHeartbeats() {
 			reqPay := pb.KVRequest{Command: IS_ALIVE}
 			msg := sendRequestToNodeUUID(reqPay, node)
 
-			fmt.Println(self.Port, "SENNNNNNNNNNNNND", node.Port)
+			fmt.Println(self.Addr.String(), "SENNNNNNNNNNNNND", node.Addr.String())
 			heartbeat := HeartbeatTimestamp{msgId: msg, time: time.Now()}
 
 			lock.Lock()
 			TimestampLogs[i] = append(TimestampLogs[i], heartbeat)
 			lock.Unlock()
 
-			fmt.Println(self.Port, "TOOO NODEE", len(TimestampLogs[i]), i, msg, "SEN TO", node.ipPort())
+			fmt.Println(self.Addr.String(), "TOOO NODEE", len(TimestampLogs[i]), i, msg, "SEN TO", node.Addr.String())
 		}
 		// heartbeat interval
 		time.Sleep(400 * time.Millisecond)
@@ -76,7 +68,7 @@ func handleHeartbeats(i int)  {
 	failuresCount := 0
 	for {
 		for _, timestamp := range TimestampLogs[i] {
-			fmt.Println("😅😅😅👽👽👽", self.Port,  "sent by", sendToNodes[i].ipPort(), "abouot to check ",timestamp.msgId)
+			fmt.Println("😅😅😅👽👽👽", self.Addr.String(),  "sent by", sendToNodes[i].Addr.String(), "abouot to check ",timestamp.msgId)
 			if waitingForResonse(timestamp.msgId, 500 * time.Millisecond) {
 				failuresCount = 0
 				lock.Lock()
@@ -95,11 +87,11 @@ func handleHeartbeats(i int)  {
 				break
 			}
 
-			fmt.Println("😱😱😱Waiting more rounds....", failuresCount, sendToNodes[i].Port, "reported by ", self.Port)
+			fmt.Println("😱😱😱Waiting more rounds....", failuresCount, sendToNodes[i].Addr.String(), "reported by ", self.Addr.String())
 
 			if failuresCount >= 3 && time.Now().After(sendToNodes[i].LastTimeStamp.Add(maxWaitingTime)) {
 				//claim the node failed
-				fmt.Println("No good 😅😅😅😅😅😅 ", sendToNodes[i].Port, "failed")
+				fmt.Println("No good 😅😅😅😅😅😅 ", sendToNodes[i].Addr.String(), "failed")
 				RemoveNode(sendToNodes[i])
 
 				if i == 0 {

@@ -1,14 +1,11 @@
 package agamemnon
 
 import (
-	"fmt"
 	"net"
 	"time"
 )
 
 type Node struct {
-	Ip       string
-	Port     int
 	HashCode uint32
 	Addr     *net.UDPAddr
 	IsSelf   bool
@@ -35,9 +32,4 @@ func (node *Node) prevNode() *Node {
 // index returns the index of the node in cluster
 func (n *Node) getIndex() int {
 	return n.Index
-}
-
-// ipPort returns node's ip:port string
-func (n Node) ipPort() string {
-	return fmt.Sprintf("%v:%v", n.Ip, n.Port)
 }
