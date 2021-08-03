@@ -31,6 +31,17 @@ func test_compress()  {
 	//reflect.DeepEqual(kv, ds)
 }
 
+func test_responseCache() {
+	var rCache agamemnon.ResponseCache
+	rCache.Init()
+
+	key := []byte{1,2,3,4}
+	rCache.Add(key, []byte{22})
+
+	fmt.Println(rCache.Get(key))
+}
+
 func main()  {
-	test_compress()
+	//test_compress()
+	//test_responseCache()
 }

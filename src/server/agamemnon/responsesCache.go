@@ -31,7 +31,7 @@ func (r *ResponseCache) Add(msgID []byte, respMsgBytes []byte) bool {
 	if IsAllocatePossible(len(msgID) + len(respMsgBytes) + 1) {
 		r.Lock()
 		defer r.Unlock()
-		fmt.Println("ADDING after sending msg", self.Port, msgID, respMsgBytes)
+		fmt.Println("Adding to ResponseCache after sending msg", self.Port, msgID, respMsgBytes)
 		key := hex.EncodeToString(msgID)
 		cacheVal := CacheVal{response: respMsgBytes, ttl: 4}
 		r.cache[key] = &cacheVal

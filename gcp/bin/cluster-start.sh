@@ -4,6 +4,7 @@ set -e
 
 NODE_COUNT=$1
 
+echo "Building compiled file"
 GOOS=linux GOARCH=amd64 go build -o dht-server src/server/agamemnon-server.go
 
 for i in `seq $NODE_COUNT`; do

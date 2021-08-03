@@ -273,7 +273,7 @@ func gcpClient3(name string, ip string, port int) {
 //35.197.107.204:33302
 //34.145.53.235:33303
 
-func main() {
+func main2() {
 	fmt.Println("Start..")
 
 	gcpClient1("CClientA", "35.233.149.231", 33301)

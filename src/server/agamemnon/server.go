@@ -79,13 +79,6 @@ func getChecksum(messageID []byte, payload []byte) uint64 {
 	return uint64(crc32.ChecksumIEEE(append(messageID, payload...)))
 }
 
-// Create a message for request with random ID
-// See buildReqMsgWithMsgId
-func buildReqMsg(reqPay *pb.KVRequest) *pb.Msg {
-	msgId, _ := uuid.New().MarshalBinary()
-	return buildReqMsgWithMsgId(*reqPay, msgId)
-}
-
 func buildReqMsgWithMsgId(reqPay pb.KVRequest, msgId []byte) *pb.Msg {
 	rawReqPay, _ := proto.Marshal(&reqPay)
 	return &pb.Msg{
@@ -166,9 +159,9 @@ func forwardRequest(originatorAddr *net.UDPAddr, msgID []byte, reqPay pb.KVReque
 		return
 	}
 
-	sendRequestMsgWithId(msgID, reqPay, toNode.Addr)
-	//sendResponse(originatorAddr, msgID, resPay)
+	sendRequestToNode(msgID, reqPay, &toNode)
 }
+
 func sendRequestToNodeUUID(reqPay pb.KVRequest, toNode *Node) []byte {
 	msgId, _ := uuid.New().MarshalBinary()
 	sendRequestToNode(msgId, reqPay, toNode)
@@ -187,18 +180,6 @@ func sendRequestToNode(msgID []byte, reqPay pb.KVRequest, toNode *Node) {
 		fmt.Println("sendRequestMsg Err: ", err)
 	}
 }
-
-// sendRequestMsgWithId sends reqPay request to toNode with msgID
-func sendRequestMsgWithId(msgID []byte, reqPay pb.KVRequest, clientAddr *net.UDPAddr) {
-	//log.Debug(log.Build("REQ", msgID, reqPay.Command, false, clientAddr.Port))
-	msg := buildReqMsgWithMsgId(reqPay, msgID)
-	rawMsg, _ := proto.Marshal(msg)
-	_, err := conn.WriteToUDP(rawMsg, clientAddr)
-	if err != nil {
-		log.Println("sendRequestMsgWithId", err)
-	}
-}
-
 
 // Given a response message from another server, parse the response,
 // perform the necessary action (e.g. pass it back to the originator)
@@ -282,9 +263,8 @@ func waitingForResponseData(msgId []byte, duration time.Duration) []byte {
 //		reqPay unmarshalled payload
 //		rawMsg original message for further processing
 func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, rawMsg []byte) {
-	//fmt.Println("👻Handing request ", reqPay.Command)
 	if respMsgBytes := responseCache.Get(msgID); respMsgBytes != nil {
-		fmt.Println("Yo what's going on here - 😡", respMsgBytes, "sending to ", clientAddr.Port)
+		fmt.Println("Handle repeated request - 😡", respMsgBytes, "sending to ", clientAddr.Port)
 
 		_, err := conn.WriteToUDP(respMsgBytes, clientAddr)
 		if err != nil {
@@ -317,12 +297,6 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 				forwardRequest(clientAddr, msgID, reqPay, rawMsg, node)
 			}
 		case GET:
-			//node := NodeForKey(reqPay.Key)
-			//if node.IsSelf || reqPay.ReplicaNum != nil {
-			//	handleGet(clientAddr, msgID, reqPay, respPay)
-			//} else {
-			//	forwardRequest(clientAddr, msgID, reqPay, rawMsg, node)
-			//}
 			node := NodeForKey(reqPay.Key)
 			var version int32
 			if node.IsSelf && reqPay.ReplicaNum == nil {
@@ -340,17 +314,17 @@ func handleRequest(clientAddr *net.UDPAddr, msgID []byte, reqPay pb.KVRequest, r
 		case REMOVE:
 			node := NodeForKey(reqPay.Key)
 			if node.IsSelf && reqPay.ReplicaNum == nil {
-				respPay.ErrCode = dataStorage.Replicas[0].Put(reqPay.Key, reqPay.Value, reqPay.Version)
+				respPay.ErrCode = dataStorage.Replicas[0].Remove(reqPay.Key)
 
 				msgId := requestToReplicaNode(self.nextNode(), reqPay, 1)
-				//msgId2 := requestToReplicaNode(self.nextNode().nextNode(), reqPay, 2)
-				if waitingForResonse(msgId, time.Second) {// && waitingForResonse(msgId) {
+				msgId2 := requestToReplicaNode(self.nextNode().nextNode(), reqPay, 2)
+				if waitingForResonse(msgId, time.Second) && waitingForResonse(msgId2, time.Second){
 					sendResponse(clientAddr, msgID, respPay)
 				} else {
 					// TODO: revert primary, send error (can't revert primary lol)
+					fmt.Println("????? can't remove fully??")
 				}
 			} else if reqPay.ReplicaNum != nil {
-
 				respPay.ErrCode =  dataStorage.Replicas[*reqPay.ReplicaNum].Remove(reqPay.Key)
 				sendResponse(clientAddr, msgID, respPay)
 			} else {
