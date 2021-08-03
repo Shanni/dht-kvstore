@@ -269,10 +269,14 @@ func gcpClient3(name string, ip string, port int) {
 	}
 }
 
+//35.233.149.231:33301
+//35.197.107.204:33302
+//34.145.53.235:33303
+
 func main() {
 	fmt.Println("Start..")
 
-	gcpClient1("CClientA", "10.138.0.3", 3332)
+	gcpClient1("CClientA", "35.233.149.231", 33301)
 
 	time.Sleep(time.Second)
 	//client1("CClientA", 3334)

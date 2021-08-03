@@ -2,11 +2,11 @@
 #set -x
 set -e
 
-node_count=$1
+NODE_COUNT=$1
 
-for i in `seq 8`; do
-  echo "Stopping node$i"
+for i in `seq $NODE_COUNT`; do
+  echo "Stopping server on node$i"
 
   source gcp/bin/gcp-set-zone.sh $i
-  gcloud compute ssh node$i --command="sudo pkill dht-server " --zone=$zone || true
+  gcloud compute ssh node$i --command="sudo pkill dht-server " --zone=$ZONE || true
 done

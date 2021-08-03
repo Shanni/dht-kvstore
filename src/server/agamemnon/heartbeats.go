@@ -77,7 +77,7 @@ func handleHeartbeats(i int)  {
 	for {
 		for _, timestamp := range TimestampLogs[i] {
 			fmt.Println("😅😅😅👽👽👽", self.Port,  "sent by", sendToNodes[i].ipPort(), "abouot to check ",timestamp.msgId)
-			if waitingForResonse(timestamp.msgId, 50 * time.Millisecond) {
+			if waitingForResonse(timestamp.msgId, 500 * time.Millisecond) {
 				failuresCount = 0
 				lock.Lock()
 				TimestampLogs[i] = TimestampLogs[i][1:]
