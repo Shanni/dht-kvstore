@@ -1,0 +1,16 @@
+CPEN 533 Test Client
+Time: Wed Aug 04 21:28:08 PDT 2021
+Build Date: Sun Jul 04 23:59:36 PDT 2021
+Java process ID: 4253
+Running test in local mode! Milestone2.
+[Milestone2 Tests]
+Secret: 0
+Exclude 256 clients tests: false
+Checking if the test client is running on GC
+Unable to determine instance type.
+Are you sure you are running the test client on an GC instance?
+
+Done building node list.
+The deployment has 10 server nodes.
+
+[ TEST Single Front-End Performance (1 clients, 60.0 seconds): PUT -> GET (closed loop) ]
