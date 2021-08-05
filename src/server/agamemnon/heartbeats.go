@@ -62,14 +62,14 @@ func sendHeartbeats() {
 }
 
 func handleHeartbeats(i int)  {
-	maxWaitingTime := 1500 * time.Millisecond
+	maxWaitingTime := 300 * time.Millisecond
 
 	// failure count for each node, we allow up to 3+ failures
 	failuresCount := 0
 	for {
 		for _, timestamp := range TimestampLogs[i] {
 			fmt.Println("😅😅😅👽👽👽", self.Addr.String(),  "sent by", sendToNodes[i].Addr.String(), "abouot to check ",timestamp.msgId)
-			if waitingForResonse(timestamp.msgId, 500 * time.Millisecond) {
+			if waitingForResonse(timestamp.msgId, 120 * time.Millisecond) {
 				failuresCount = 0
 				lock.Lock()
 				TimestampLogs[i] = TimestampLogs[i][1:]
@@ -77,7 +77,6 @@ func handleHeartbeats(i int)  {
 
 				continue
 			}
-
 			if time.Now().After(timestamp.time.Add(maxWaitingTime)) {
 				lock.Lock()
 				TimestampLogs[i] = TimestampLogs[i][1:]

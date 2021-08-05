@@ -44,8 +44,8 @@ func (r *ResponseCache) Add(msgID []byte, memo string, respMsgBytes []byte) bool
 func (r ResponseCache) Get(msgID []byte, memo string) []byte {
 	key := hex.EncodeToString(msgID) + memo
 
-	r.Lock()
-	defer r.Unlock()
+	r.RLock()
+	defer r.RUnlock()
 	if val, ok := r.cache[key]; ok {
 		fmt.Println("👽👽👽👽 GET ", self.Addr.String(), msgID, val.response)
 		return val.response
@@ -69,18 +69,18 @@ func (r *ResponseCache) Delete(msgID []byte) ([]byte, bool) {
 	return nil, false
 }
 
-func (r *ResponseCache) flush() {
-	//r.cache = make(map[string]*CacheVal)
-	for k, _ := range r.cache {
-		delete(r.cache, k)
-	}
-}
+//func (r *ResponseCache) flush() {
+//	//r.cache = make(map[string]*CacheVal)
+//	for k, _ := range r.cache {
+//		delete(r.cache, k)
+//	}
+//}
 
 func (r *ResponseCache) TTLManager() {
 	r.Init()
 
 	for {
-		r.RLock()
+		r.Lock()
 		for k, v := range r.cache {
 			if v.ttl > 0 {
 				v.ttl -= 1
@@ -90,7 +90,7 @@ func (r *ResponseCache) TTLManager() {
 				r.Unlock()
 			}
 		}
-		r.RUnlock()
+		r.Unlock()
 
 		// Run the GC explicitly since many items may have been removed
 		runtime.GC()
@@ -102,6 +102,9 @@ func (r *ResponseCache) TTLManager() {
 }
 
 func (r *ResponseCache) printData() {
+	r.Lock()
+	defer r.Unlock()
+	
 	fmt.Println("\n\n\n\n\n\n", self.Addr.String())
 	for k, v := range r.cache {
 		msg, _ := hex.DecodeString(k)
