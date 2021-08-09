@@ -41,7 +41,7 @@ func (r *ResponseCache) Add(msgID []byte, memo string, respMsgBytes []byte) bool
 	return false
 }
 
-func (r ResponseCache) Get(msgID []byte, memo string) []byte {
+func (r *ResponseCache) Get(msgID []byte, memo string) []byte {
 	key := hex.EncodeToString(msgID) + memo
 
 	r.RLock()
@@ -104,7 +104,7 @@ func (r *ResponseCache) TTLManager() {
 func (r *ResponseCache) printData() {
 	r.Lock()
 	defer r.Unlock()
-	
+
 	fmt.Println("\n\n\n\n\n\n", self.Addr.String())
 	for k, v := range r.cache {
 		msg, _ := hex.DecodeString(k)
