@@ -21,10 +21,12 @@ type ResponseCache struct {
 	cache map[string]CacheVal
 }
 
-var responseCache ResponseCache
+var responseCache = NewResponseCache()
 
-func (r *ResponseCache) Init() {
-	r.cache = map[string]CacheVal{}
+func NewResponseCache() *ResponseCache {
+	return &ResponseCache{
+		cache: make(map[string]CacheVal),
+	}
 }
 
 func (r *ResponseCache) Add(msgID []byte, memo string, respMsgBytes []byte) bool {
@@ -77,17 +79,13 @@ func (r *ResponseCache) Delete(msgID []byte) ([]byte, bool) {
 //}
 
 func (r *ResponseCache) TTLManager() {
-	r.Init()
-
 	for {
 		r.Lock()
 		for k, v := range r.cache {
 			if v.ttl > 0 {
 				v.ttl -= 1
 			} else {
-				r.Lock()
 				delete(r.cache, k)
-				r.Unlock()
 			}
 		}
 		r.Unlock()

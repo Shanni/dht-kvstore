@@ -497,7 +497,7 @@ func StartServer(port int, cluster []*Node) {
 			if err == nil {
 				rawMsg := rcvBuffer[:numBytes]
 				req, resp, msg, err := unmarshalMessage(rawMsg)
-				fmt.Println("BIG NEWS!", self.Addr.String(), " recieved ", msg.MessageID, numBytes, " from ", clientAddr.Port)
+				fmt.Println("BIG NEWS!", self.Addr.String(), " recieved ", numBytes, " from ", clientAddr.Port)
 				if err == nil && msg.Type == 1 {
 					//Hangle response
 					//fmt.Println("Ever handle response?", clientAddr.Port, clientAddr.IP)

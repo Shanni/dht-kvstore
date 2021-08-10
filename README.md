@@ -67,6 +67,14 @@ To run the test client, enter the following command in the root of this reposito
 go run test-client/testclient.go [SERVER IP ADDRESS] [SERVER PORT NUMBER]
 ```
 
+### Test with .jar files
+
+```
+$ cd gcp/tester
+
+$ java -jar mpTests-1.0-SNAPSHOT-all.jar [1 or 2] servers.txt 123456
+```
+
 ## Code Contributing Guidelines
 * Any commits to own branches, name as you like
 * Any updates to main or milestone# *only through pull request with approves*

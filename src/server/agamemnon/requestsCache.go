@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"net"
-	"runtime"
 	"sync"
 	"time"
 )
@@ -30,13 +29,13 @@ type RequestCache struct {
 	cache map[string]*RequestCacheVal
 }
 
-var incomingCache RequestCache
+var incomingCache *RequestCache = &RequestCache{}
 
 func (r *RequestCache) Init() {
 	r.cache = map[string]*RequestCacheVal{}
 }
 
-func (r RequestCache) Get(msgID []byte) *RequestCacheVal {
+func (r *RequestCache) Get(msgID []byte) *RequestCacheVal {
 	r.RLock()
 	defer r.RUnlock()
 
@@ -110,27 +109,24 @@ func (r *RequestCache) TTLManager() {
 	r.Init()
 
 	for {
+		r.Lock()
 		for k, v := range r.cache {
 			if v.ttl > 0 {
 				v.ttl -= 1
 			} else {
-				r.Lock()
 				delete(r.cache, k)
-				r.Unlock()
 			}
 		}
-
-		// Run the GC explicitly since many items may have been removed
-		runtime.GC()
+		r.Unlock()
 
 		time.Sleep(10 * time.Second)
 		//r.printData()
 	}
 }
-
-func requestCacheToString(msg string)  {
-	fmt.Println("debugggg", len(incomingCache.cache))
-	for k, v := range incomingCache.cache {
-		fmt.Println(msg, "-resquestCache-", k, v)
-	}
-}
+//
+//func requestCacheToString(msg string)  {
+//	fmt.Println("debugggg", len(incomingCache.cache))
+//	for k, v := range incomingCache.cache {
+//		fmt.Println(msg, "-resquestCache-", k, v)
+//	}
+//}

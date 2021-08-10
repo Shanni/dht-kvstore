@@ -54,20 +54,6 @@ func (kv *KV) GetAll() []StoreVal {
 	return kvCopy
 }
 
-// GetSlice returns a slice of keys which hashcodes are <= endHashCode
-// Returns a *copy* that can be accessed without locks
-func (kv *KV) GetSlice(endHashCode uint32) []StoreVal {
-	kv.Lock()
-	defer kv.Unlock()
-	result := make([]StoreVal, 0)
-	for _, value := range kv.KVStore {
-		if hash(value.Key) <= endHashCode {
-			result = append(result, value)
-		}
-	}
-	return result
-}
-
 // Put a new key-value pair or update an existing one
 //
 // Arguments:
