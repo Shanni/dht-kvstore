@@ -68,7 +68,6 @@ func handleHeartbeats(i int)  {
 	failuresCount := 0
 	for {
 		for _, timestamp := range TimestampLogs[i] {
-			fmt.Println("😅😅😅👽👽👽", self.Addr.String(),  "sent by", sendToNodes[i].Addr.String(), "abouot to check ",timestamp.msgId)
 			if waitingForResonse(timestamp.msgId, 120 * time.Millisecond) {
 				failuresCount = 0
 				lock.Lock()
@@ -86,11 +85,8 @@ func handleHeartbeats(i int)  {
 				break
 			}
 
-			fmt.Println("😱😱😱Waiting more rounds....", failuresCount, sendToNodes[i].Addr.String(), "reported by ", self.Addr.String())
-
 			if failuresCount >= 3 && time.Now().After(sendToNodes[i].LastTimeStamp.Add(maxWaitingTime)) {
 				//claim the node failed
-				fmt.Println("No good 😅😅😅😅😅😅 ", sendToNodes[i].Addr.String(), "failed")
 				RemoveNode(sendToNodes[i])
 
 				if i == 0 {
@@ -105,7 +101,6 @@ func handleHeartbeats(i int)  {
 			}
 		}
 		time.Sleep(300 * time.Millisecond)
-		//fmt.Println("👽👽👽👅👅", self.Port,  " check sent by", sendToNodes[i].ipPort())
 	}
 }
 

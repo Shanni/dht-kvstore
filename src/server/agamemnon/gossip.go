@@ -2,7 +2,6 @@ package agamemnon
 
 import (
 	pb "agamemnon/pb/protobuf"
-	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -12,13 +11,11 @@ const gossipCount = 3
 
 func startGossipFailure(node *Node) {
 	randIndex := generateUniqueRandomIndexes()
-	fmt.Println("👛👛🌂", randIndex)
 	for _, index := range randIndex {
 		if index == node.Index || index >= len(cluster) {
 			continue
 		}
 
-		fmt.Println("👺👺", index, cluster[index].Addr.String())
 		str := node.Addr.String()
 		reqPay := pb.KVRequest{Command: NOTIFY_FAUILURE, NodeIpPort: &str}
 

@@ -10,7 +10,6 @@ import (
 )
 
 func EncodeToBytes(kv interface{}) []byte {
-
 	buf := bytes.Buffer{}
 	enc := gob.NewEncoder(&buf)
 	err := enc.Encode(kv)
@@ -22,7 +21,6 @@ func EncodeToBytes(kv interface{}) []byte {
 }
 
 func Compress(s []byte) []byte {
-
 	zipbuf := bytes.Buffer{}
 	zipped := gzip.NewWriter(&zipbuf)
 	zipped.Write(s)
@@ -32,7 +30,6 @@ func Compress(s []byte) []byte {
 }
 
 func Decompress(s []byte) []byte {
-
 	rdr, _ := gzip.NewReader(bytes.NewReader(s))
 	data, err := ioutil.ReadAll(rdr)
 	if err != nil {
@@ -44,7 +41,6 @@ func Decompress(s []byte) []byte {
 }
 
 func DecodeToKV(s []byte) []StoreVal {
-
 	kvStore := []StoreVal{}
 	dec := gob.NewDecoder(bytes.NewReader(s))
 	err := dec.Decode(&kvStore)
